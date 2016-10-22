@@ -1,8 +1,9 @@
 module.exports = class Resolver {
-  constructor(filter, objs = {}, deps = {}) {
-    this.objs = objs;
-    this.deps = deps;
+  constructor({filter, process, objs = {}, deps = {}} = {}) {
     this.filter = filter || (name => name);
+    this.process = process || ((src, dest, key) => src)
+    this.objs = this.objs(objs);
+    this.deps = deps;
   }
 
   get() {
@@ -25,6 +26,14 @@ module.exports = class Resolver {
     return this;
   }
 
+  objs(objs) {
+    for(var name in objs) {
+      this.obj(name, objs[name]);
+    }
+
+    return this;
+  }
+
   add(dest, key, name) {
     return typeof(dest) === "object" ? this.dep(dest, key, name) : this.obj(dest, key);
   }
@@ -35,7 +44,7 @@ module.exports = class Resolver {
       var obj = this.objs[name];
       for(var i = 0, len = dep.length; i < len; i++) {
         var [dest, key] = dep[i];
-        dest[key] = obj;
+        dest[key] = this.process(obj, dest, key);
       }
     }
 
